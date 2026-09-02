@@ -361,14 +361,26 @@ Choose a shorter clip length (1 or 2 minutes), or use a longer source video.
 
 ### Export is very slow
 
-That is normal for:
+That is normal for very long sources with many clips, but **v1.0.3+** is much faster.
 
-- Long videos  
-- Many clips  
-- Enhanced quality ON  
-- Subtitles ON (Whisper + burn-in)
+Tips:
+- Use **v1.0.3 or newer**
+- Turn **Auto subtitles** OFF if you do not need captions (Whisper is the slowest step)
+- Prefer **2 or 3 minute** clips (fewer files to encode) for a first pass
+- Keep **Enhanced quality** ON — it no longer uses the ultra-slow encoder preset
 
-Try a short test clip first.
+A 20–30 minute video should usually finish in minutes on a modern PC, not an hour.
+
+### Captions / subtitles missing
+
+1. Confirm the header shows **Whisper ready**
+2. Keep **Auto subtitles** ON
+3. Use **ReelCut 1.0.3+** (fixes Windows caption burn-in + auto language detection)
+4. Make sure the video has clear speech (not music-only)
+5. Watch the log for:
+   - `Whisper not installed`
+   - `No captions were produced`
+   - `Captions ready — encoding clips…`
 
 ### App won’t open on macOS
 
