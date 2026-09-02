@@ -15,3 +15,7 @@ release/
 .vscode/
 .idea/
 Thumbs.db
+resources/bin/ffmpeg
+resources/bin/ffmpeg.exe
+resources/bin/ffprobe
+resources/bin/ffprobe.exe
