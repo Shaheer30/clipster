@@ -112,73 +112,133 @@ You can change this with the **Folder** button.
 
 ## 5. Optional: install Whisper (auto subtitles)
 
-### What Whisper is
+Skip this whole section if you do **not** need burned-in captions. ReelCut still works without Whisper.
 
-**Whisper** is OpenAI’s speech-to-text tool. ReelCut uses it only for **Auto subtitles**:
+### What Whisper does
 
-1. Transcribe speech from your video  
-2. Create caption timing  
-3. Burn captions into each exported clip  
+Whisper listens to the video audio and creates **automatic subtitles** that ReelCut burns into your Shorts / TikTok / Reels clips.
 
-Without Whisper, ReelCut still clips, crops, and enhances video — just without burned-in captions.
+Official project: [https://github.com/openai/whisper](https://github.com/openai/whisper)
 
-### Windows install (detailed)
+> **Important:** You do **not** need Node.js for Whisper.  
+> Node.js is only for developers who build ReelCut from source.  
+> For subtitles you only need: **① Python** → **② Whisper**.
 
-1. Install **Python 3.10+** from [https://www.python.org/downloads/](https://www.python.org/downloads/)  
-   - Enable **“Add python.exe to PATH”**.
-2. Open **PowerShell** and confirm Python works:
+---
 
-```powershell
+### Easy setup (Windows) — 2 steps
+
+#### Step 1 — Install Python
+
+1. Open the official Python download page:  
+   **[https://www.python.org/downloads/](https://www.python.org/downloads/)**
+2. Click the big yellow **Download Python** button.
+3. Run the installer.
+4. On the first screen, turn ON this checkbox (very important):
+
+   **Add python.exe to PATH**
+
+5. Click **Install Now** and finish.
+6. Close any old Command Prompt / PowerShell windows.
+7. Open a **new** Command Prompt and check:
+
+```bat
 python --version
 pip --version
 ```
 
-3. Install Whisper:
+You should see version numbers (for example `Python 3.12.x`).  
+If `python` is not found, reinstall Python and make sure **Add python.exe to PATH** is checked.
 
-```powershell
+#### Step 2 — Install Whisper
+
+1. In the same Command Prompt, run:
+
+```bat
 pip install -U openai-whisper
 ```
 
-4. Confirm the command exists:
+2. Wait until it finishes (this can take a few minutes).
+3. Check that Whisper installed:
 
-```powershell
+```bat
 whisper --help
 ```
 
-5. Fully quit and reopen **ReelCut**.  
-   The header should show **Whisper ready**.
+4. If that fails, try:
 
-**Notes**
-
-- First subtitle job may download a model (ReelCut uses the small `tiny` model) and can take several minutes.
-- Subtitles need clear speech audio; music-only videos produce little or no text.
-- If install fails, try:
-
-```powershell
+```bat
 python -m pip install -U openai-whisper
+python -m whisper --help
 ```
 
-### macOS install
+5. Fully close **ReelCut**, then open it again.
+6. In the ReelCut header, you should now see **Whisper ready**.
+7. Turn **Auto subtitles** ON and create a test clip.
+
+**Package page (optional reading):**  
+[https://pypi.org/project/openai-whisper/](https://pypi.org/project/openai-whisper/)
+
+---
+
+### Easy setup (macOS) — 2 steps
+
+#### Step 1 — Install Python
+
+- Download: **[https://www.python.org/downloads/macos/](https://www.python.org/downloads/macos/)**  
+  **or** with Homebrew:
 
 ```bash
-brew install python ffmpeg
+brew install python
+```
+
+Check:
+
+```bash
+python3 --version
+pip3 --version
+```
+
+#### Step 2 — Install Whisper
+
+```bash
 pip3 install -U openai-whisper
 whisper --help
 ```
 
-Restart ReelCut afterward.
+Restart ReelCut → confirm **Whisper ready**.
 
-### Linux install
+---
+
+### Easy setup (Linux) — 2 steps
+
+#### Step 1 — Install Python
 
 ```bash
 sudo apt update
-sudo apt install -y python3 python3-pip ffmpeg
+sudo apt install -y python3 python3-pip
+python3 --version
+pip3 --version
+```
+
+#### Step 2 — Install Whisper
+
+```bash
 pip3 install -U openai-whisper
-# or: python3 -m pip install -U openai-whisper
+# or:
+python3 -m pip install -U openai-whisper
 whisper --help
 ```
 
-Restart ReelCut afterward.
+Restart ReelCut → confirm **Whisper ready**.
+
+---
+
+### Whisper tips
+
+- First subtitle run may download a small model and take longer.
+- Needs clear speech; music-only videos may produce almost no captions.
+- If Whisper is not installed, turn **Auto subtitles** OFF and keep clipping normally.
 
 ---
 
