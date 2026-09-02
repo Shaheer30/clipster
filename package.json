@@ -7,9 +7,9 @@
   "license": "MIT",
   "homepage": "https://github.com/shaheersiddiqi/reelcut",
   "scripts": {
-    "dev": "electron-vite dev -- --no-sandbox",
+    "dev": "electron-vite dev -- --no-sandbox --disable-gpu --disable-dev-shm-usage",
     "build": "electron-vite build",
-    "preview": "electron-vite preview -- --no-sandbox",
+    "preview": "electron-vite preview -- --no-sandbox --disable-gpu --disable-dev-shm-usage",
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win",
     "dist:mac": "npm run build && electron-builder --mac",
