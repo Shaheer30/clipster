@@ -432,7 +432,9 @@ Releases: [https://github.com/Shaheer30/reelcut/releases](https://github.com/Sha
 
 1. Download **ReelCut-Setup** for your OS from Releases.  
 2. Install and open ReelCut.  
-3. (Optional) Install Whisper for auto subtitles.  
+3. (Optional, for auto subtitles only)
+   - **Step 1:** Install Python → [python.org/downloads](https://www.python.org/downloads/) (check **Add to PATH**)
+   - **Step 2:** Run `pip install -U openai-whisper`, then restart ReelCut  
 4. Import a video or paste a YouTube URL.  
 5. Pick **1/2/3 min**, **9:16 or 16:9**, quality + subtitles.  
 6. Click **Create clips**.  
