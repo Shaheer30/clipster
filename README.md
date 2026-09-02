@@ -2,15 +2,19 @@
 
 Desktop app that turns long videos into ready-to-post **YouTube Shorts**, **TikTok**, and **Instagram Reels** clips.
 
-## Download installers
+> **End users:** start with the **[User Guide](./USER_GUIDE.md)** — installers, Whisper setup, step-by-step usage, and troubleshooting.  
+> **Developers:** keep reading below.
 
-Get the latest setup files from **[GitHub Releases](https://github.com/Shaheer30/reelcut/releases/tag/v1.0.1)**:
+## Download installers (production)
+
+Latest release: **[v1.0.2](https://github.com/Shaheer30/reelcut/releases/tag/v1.0.2)**  
+(or always: [https://github.com/Shaheer30/reelcut/releases/latest](https://github.com/Shaheer30/reelcut/releases/latest))
 
 | Platform | Download |
 |---|---|
-| **Windows** | [ReelCut-Setup-1.0.1.exe](https://github.com/Shaheer30/reelcut/releases/download/v1.0.1/ReelCut-Setup-1.0.1.exe) |
-| **macOS** | [ReelCut-1.0.1-mac.dmg](https://github.com/Shaheer30/reelcut/releases/download/v1.0.1/ReelCut-1.0.1-mac.dmg) |
-| **Linux** | [AppImage](https://github.com/Shaheer30/reelcut/releases/download/v1.0.1/ReelCut-1.0.1-x86_64.AppImage) · [Deb](https://github.com/Shaheer30/reelcut/releases/download/v1.0.1/ReelCut-1.0.1-amd64.deb) |
+| **Windows** | [ReelCut-Setup-1.0.2.exe](https://github.com/Shaheer30/reelcut/releases/download/v1.0.2/ReelCut-Setup-1.0.2.exe) |
+| **macOS** | [ReelCut-1.0.2-mac.dmg](https://github.com/Shaheer30/reelcut/releases/download/v1.0.2/ReelCut-1.0.2-mac.dmg) |
+| **Linux** | [AppImage](https://github.com/Shaheer30/reelcut/releases/download/v1.0.2/ReelCut-1.0.2-x86_64.AppImage) · [Deb](https://github.com/Shaheer30/reelcut/releases/download/v1.0.2/ReelCut-1.0.2-amd64.deb) |
 
 ## Features
 
@@ -24,8 +28,8 @@ Get the latest setup files from **[GitHub Releases](https://github.com/Shaheer30
 ## Requirements (development)
 
 - Node.js 20+
-- FFmpeg (bundled via `ffmpeg-static` when available; system `ffmpeg`/`ffprobe` also work)
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) for YouTube downloads
+- FFmpeg (bundled via `ffmpeg-static` / staged into `resources/bin` at package time)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) for YouTube downloads (bundled into installer resources)
 - Optional: [OpenAI Whisper](https://github.com/openai/whisper) (`pip install openai-whisper`) for auto captions
 
 ```bash
@@ -55,20 +59,21 @@ This opens the **ReelCut** Electron window. Exports default to `~/ReelCut/export
 npm run dist
 
 # Explicit targets
-npm run dist:win    # NSIS setup: release/ReelCut-Setup-1.0.1.exe
+npm run dist:win    # NSIS setup: release/ReelCut-Setup-<version>.exe
 npm run dist:mac    # DMG
 npm run dist:linux  # AppImage + .deb
 ```
 
-Installers are written to the `release/` folder. Attach those artifacts to a **GitHub Release** so users can download the setup and install ReelCut on their machine.
+`npm run prepare:binaries` copies platform `ffmpeg` / `ffprobe` into `resources/bin` before packaging so Windows installs can spawn them outside `app.asar`.
+
+Installers are written to the `release/` folder.
 
 ### Publish a GitHub Release
 
-1. Push a version tag, for example `v1.0.1`
-2. GitHub Actions (`.github/workflows/release.yml`) builds Windows, macOS, and Linux packages
-3. Users download the setup from the Releases page and install
-
-Update `build.publish` in `package.json` to match your GitHub username/repo before publishing.
+1. Bump `version` in `package.json`
+2. Push a version tag, for example `v1.0.2`
+3. GitHub Actions (`.github/workflows/release.yml`) builds Windows, macOS, and Linux packages and attaches them to the release
+4. Users follow **[USER_GUIDE.md](./USER_GUIDE.md)** to install
 
 ## How clipping works
 
@@ -83,8 +88,10 @@ Update `build.publish` in `package.json` to match your GitHub username/repo befo
 ```
 electron/     Main process, preload, FFmpeg / yt-dlp / Whisper pipeline
 src/          React UI
-resources/    Extra binaries (yt-dlp) bundled into installers
+resources/    Extra binaries (yt-dlp; ffmpeg staged at build time)
+scripts/      Packaging helpers (prepare-binaries)
 release/      Built setup packages (after npm run dist)
+USER_GUIDE.md End-user install + usage notes
 ```
 
 ## License
