@@ -543,6 +543,13 @@ button {
   margin-top: 8px;
 }
 
+.muted-path {
+  color: var(--muted);
+  font-size: 0.75rem;
+  word-break: break-all;
+  margin-top: -4px;
+}
+
 .platform-chip {
   font-size: 0.75rem;
   color: var(--muted);

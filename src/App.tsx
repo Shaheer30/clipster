@@ -306,16 +306,6 @@ export default function App() {
               </div>
             </div>
 
-            <div className="field">
-              <label>Export folder</label>
-              <div className="actions" style={{ marginTop: 0 }}>
-                <input type="text" readOnly value={outputDir} style={{ flex: 1 }} />
-                <button type="button" className="btn btn-ghost" onClick={() => void pickOutput()}>
-                  Browse
-                </button>
-              </div>
-            </div>
-
             <div className="actions">
               <button type="button" className="btn btn-primary" disabled={!canStart} onClick={() => void startJob()}>
                 {busy ? 'Working…' : 'Create clips'}
@@ -325,7 +315,11 @@ export default function App() {
                   Cancel
                 </button>
               )}
+              <button type="button" className="btn btn-ghost" onClick={() => void pickOutput()} title={outputDir}>
+                Folder
+              </button>
             </div>
+            <div className="muted-path">{outputDir || 'Exports go to ~/ReelCut/exports'}</div>
           </div>
         </section>
 
