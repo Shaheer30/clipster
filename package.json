@@ -1,0 +1,96 @@
+{
+  "name": "reelcut",
+  "version": "1.0.0",
+  "description": "Desktop app for clipping videos into ready-to-post Shorts, TikTok, and Reels",
+  "main": "./out/main/index.js",
+  "author": "ReelCut",
+  "license": "MIT",
+  "homepage": "https://github.com/shaheersiddiqi/reelcut",
+  "scripts": {
+    "dev": "electron-vite dev -- --no-sandbox",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview -- --no-sandbox",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "ffprobe-static": "^3.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  },
+  "build": {
+    "appId": "com.reelcut.app",
+    "productName": "ReelCut",
+    "directories": {
+      "output": "release",
+      "buildResources": "resources"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/bin",
+        "to": "bin",
+        "filter": ["**/*"]
+      }
+    ],
+    "asarUnpack": [
+      "**/node_modules/ffmpeg-static/**",
+      "**/node_modules/ffprobe-static/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "ReelCut-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ReelCut"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "artifactName": "ReelCut-${version}-mac.${ext}",
+      "category": "public.app-category.video"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "artifactName": "ReelCut-${version}-${arch}.${ext}",
+      "category": "AudioVideo",
+      "desktop": {
+        "Name": "ReelCut",
+        "Comment": "Clip videos into ready-to-post shorts",
+        "Categories": "AudioVideo;Video;"
+      }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "shaheersiddiqi",
+        "repo": "reelcut"
+      }
+    ]
+  }
+}
