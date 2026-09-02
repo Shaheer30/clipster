@@ -2,6 +2,15 @@
 
 Desktop app that turns long videos into ready-to-post **YouTube Shorts**, **TikTok**, and **Instagram Reels** clips.
 
+## Download installers
+
+Get the latest setup files from **[GitHub Releases](https://github.com/Shaheer30/reelcut/releases/tag/v1.0.0)**:
+
+| Platform | Download |
+|---|---|
+| **Windows** | [ReelCut-Setup-1.0.0.exe](https://github.com/Shaheer30/reelcut/releases/download/v1.0.0/ReelCut-Setup-1.0.0.exe) |
+| **Linux** | [AppImage](https://github.com/Shaheer30/reelcut/releases/download/v1.0.0/ReelCut-1.0.0-x86_64.AppImage) · [Deb](https://github.com/Shaheer30/reelcut/releases/download/v1.0.0/ReelCut-1.0.0-amd64.deb) |
+
 ## Features
 
 - Import a **local video** or a **YouTube URL**
