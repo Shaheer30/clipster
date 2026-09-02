@@ -283,7 +283,7 @@ export default function App() {
               <div className="toggle">
                 <div className="copy">
                   <strong>Enhanced quality</strong>
-                  <span>Sharper encode, richer contrast, high-bitrate AAC</span>
+                  <span>Faster encode with clearer color (recommended)</span>
                 </div>
                 <button
                   type="button"

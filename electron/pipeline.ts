@@ -77,9 +77,14 @@ function getYtDlpPath(): string {
 }
 
 async function resolveWhisper(): Promise<{ cmd: string; prefix: string[] } | null> {
-  if (await canRun('whisper', ['--help'])) return { cmd: 'whisper', prefix: [] }
-  if (await canRun('python3', ['-m', 'whisper', '--help'])) {
-    return { cmd: 'python3', prefix: ['-m', 'whisper'] }
+  const candidates: Array<{ cmd: string; prefix: string[] }> = [
+    { cmd: 'whisper', prefix: [] },
+    { cmd: 'python', prefix: ['-m', 'whisper'] },
+    { cmd: 'python3', prefix: ['-m', 'whisper'] },
+    { cmd: 'py', prefix: ['-3', '-m', 'whisper'] }
+  ]
+  for (const candidate of candidates) {
+    if (await canRun(candidate.cmd, [...candidate.prefix, '--help'])) return candidate
   }
   return null
 }
@@ -153,12 +158,42 @@ async function downloadYouTube(url: string, workDir: string, onLine: (line: stri
 }
 
 function aspectFilter(aspect: '16:9' | '9:16', enhance: boolean): string {
+  // bicubic is much faster than lanczos; keep a light polish when enhance is on
+  const flags = enhance ? 'lanczos' : 'bicubic'
   const smart =
     aspect === '9:16'
-      ? `scale=1080:1920:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1920`
-      : `scale=1920:1080:force_original_aspect_ratio=increase:flags=lanczos,crop=1920:1080`
-  const sharpen = enhance ? ',unsharp=5:5:0.8:5:5:0.0,eq=contrast=1.06:saturation=1.08:brightness=0.02' : ''
+      ? `scale=1080:1920:force_original_aspect_ratio=increase:flags=${flags},crop=1080:1920`
+      : `scale=1920:1080:force_original_aspect_ratio=increase:flags=${flags},crop=1920:1080`
+  const sharpen = enhance ? ',eq=contrast=1.05:saturation=1.06:brightness=0.01' : ''
   return smart + sharpen
+}
+
+async function extractAudioForWhisper(
+  videoPath: string,
+  workDir: string,
+  onLine: (line: string) => void
+): Promise<string> {
+  const audioPath = join(workDir, 'audio_16k.wav')
+  const ffmpeg = getFfmpegPath()
+  await runProcess(
+    ffmpeg,
+    [
+      '-y',
+      '-i',
+      videoPath,
+      '-vn',
+      '-ac',
+      '1',
+      '-ar',
+      '16000',
+      '-c:a',
+      'pcm_s16le',
+      audioPath
+    ],
+    onLine,
+    workDir
+  )
+  return audioPath
 }
 
 async function transcribe(
@@ -173,31 +208,45 @@ async function transcribe(
   }
 
   try {
+    onLine('Extracting audio for faster transcription…')
+    const audioPath = await extractAudioForWhisper(videoPath, workDir, onLine)
+
+    // Auto-detect language (do not force English). tiny model = fastest usable captions.
     await runProcess(
       whisper.cmd,
       [
         ...whisper.prefix,
-        videoPath,
+        audioPath,
         '--model',
         'tiny',
         '--output_format',
         'srt',
         '--output_dir',
         workDir,
-        '--language',
-        'en',
         '--fp16',
+        'False',
+        '--verbose',
+        'False',
+        '--condition_on_previous_text',
         'False'
       ],
-      onLine
+      onLine,
+      workDir
     )
-    const base = basename(videoPath, extname(videoPath))
-    const srt = join(workDir, `${base}.srt`)
-    if (existsSync(srt)) return srt
 
-    // whisper may name by stem differently — pick any srt
-    const any = readdirSync(workDir).find((f) => f.endsWith('.srt'))
-    return any ? join(workDir, any) : null
+    const preferred = join(workDir, 'audio_16k.srt')
+    if (existsSync(preferred) && readFileSync(preferred, 'utf8').trim()) return preferred
+
+    const any = readdirSync(workDir)
+      .filter((f) => f.endsWith('.srt'))
+      .map((f) => join(workDir, f))
+      .find((p) => readFileSync(p, 'utf8').trim().length > 0)
+
+    if (!any) {
+      onLine('Whisper finished but produced no subtitle text (silent or unclear audio).')
+      return null
+    }
+    return any
   } catch (err) {
     onLine(`Subtitle generation skipped: ${(err as Error).message}`)
     return null
@@ -255,6 +304,7 @@ async function renderClip(opts: {
   aspect: '16:9' | '9:16'
   enhance: boolean
   subtitlePath?: string | null
+  workDir: string
   onLine: (line: string) => void
 }): Promise<void> {
   const ffmpeg = getFfmpegPath()
@@ -270,40 +320,49 @@ async function renderClip(opts: {
   ]
 
   if (opts.subtitlePath && existsSync(opts.subtitlePath)) {
-    // Escape path for subtitles filter
-    const escaped = opts.subtitlePath.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'")
+    // Use a short relative path + cwd so Windows drive letters don't break libass
+    const localSubs = join(opts.workDir, 'burn.srt')
+    writeFileSync(localSubs, readFileSync(opts.subtitlePath))
     args.push(
       '-vf',
-      `${vf},subtitles='${escaped}':force_style='FontName=Arial,FontSize=22,PrimaryColour=&H00FFFFFF&,OutlineColour=&H00000000&,BorderStyle=3,Outline=1,Shadow=0,MarginV=48,Alignment=2'`
+      `${vf},subtitles=burn.srt:force_style='FontName=Arial,FontSize=24,PrimaryColour=&H00FFFFFF&,OutlineColour=&H00000000&,BorderStyle=3,Outline=2,Shadow=0,MarginV=60,Alignment=2'`
     )
   } else {
     args.push('-vf', vf)
   }
 
+  // veryfast/faster keeps 20–30 min sources practical; enhance only improves CRF slightly
   args.push(
     '-c:v',
     'libx264',
     '-preset',
-    opts.enhance ? 'slow' : 'medium',
+    opts.enhance ? 'faster' : 'veryfast',
     '-crf',
-    opts.enhance ? '18' : '20',
+    opts.enhance ? '20' : '23',
     '-pix_fmt',
     'yuv420p',
+    '-threads',
+    '0',
     '-c:a',
     'aac',
     '-b:a',
-    '192k',
+    '160k',
     '-movflags',
     '+faststart',
     opts.output
   )
 
-  await runProcess(ffmpeg, args, opts.onLine)
+  await runProcess(ffmpeg, args, opts.onLine, opts.workDir)
 }
 
-function runProcess(cmd: string, args: string[], onLine: (line: string) => void): Promise<void> {
+function runProcess(
+  cmd: string,
+  args: string[],
+  onLine: (line: string) => void,
+  cwd?: string
+): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], cwd })
     const fail = (err: Error) => reject(err)
 
     child.stdout.on('data', (buf: Buffer) => {
@@ -383,12 +442,26 @@ export async function processClipJob(
     if (request.burnSubtitles) {
       report({
         status: 'transcribing',
-        message: 'Generating subtitles with Whisper (first run may download the model)…',
+        message: 'Generating subtitles with Whisper (audio-only, auto language)…',
         percent: 25
       })
       masterSrt = await transcribe(sourcePath, workRoot, (line) => {
         report({ status: 'transcribing', message: line.slice(0, 140), percent: 30 })
       })
+      if (!masterSrt) {
+        report({
+          status: 'clipping',
+          message:
+            'No captions were produced (Whisper missing, failed, or no speech). Continuing without subtitles…',
+          percent: 34
+        })
+      } else {
+        report({
+          status: 'clipping',
+          message: 'Captions ready — encoding clips with burned-in subtitles…',
+          percent: 34
+        })
+      }
     }
 
     assertNotCancelled(jobId)
@@ -411,11 +484,14 @@ export async function processClipJob(
       if (masterSrt) {
         clipSrt = join(workRoot, `part_${i + 1}.srt`)
         sliceSrt(masterSrt, start, start + duration, clipSrt)
+        if (!readFileSync(clipSrt, 'utf8').trim()) {
+          clipSrt = undefined
+        }
       }
 
       const basePct = 35 + Math.round((i / Math.max(totalClips, 1)) * 55)
       report({
-        status: request.burnSubtitles ? 'subtitling' : 'clipping',
+        status: clipSrt ? 'subtitling' : 'clipping',
         message: `Rendering clip ${i + 1} of ${totalClips}…`,
         percent: basePct
       })
@@ -427,7 +503,8 @@ export async function processClipJob(
         duration,
         aspect: request.aspectRatio,
         enhance: request.enhanceQuality,
-        subtitlePath: request.burnSubtitles ? clipSrt : null,
+        subtitlePath: clipSrt,
+        workDir: workRoot,
         onLine: (line) => {
           if (line.includes('time=')) {
             report({
