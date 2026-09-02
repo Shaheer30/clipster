@@ -60,7 +60,7 @@ function createWindow(): void {
     height: 780,
     minWidth: 960,
     minHeight: 640,
-    title: 'ReelCut',
+    title: 'Clipster',
     backgroundColor: '#0c1017',
     show: false,
     autoHideMenuBar: true,
@@ -93,7 +93,7 @@ function sendProgress(payload: unknown): void {
 }
 
 function defaultOutputDir(): string {
-  const dir = join(homedir(), 'ReelCut', 'exports')
+  const dir = join(homedir(), 'Clipster', 'exports')
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   return dir
 }

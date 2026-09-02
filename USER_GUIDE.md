@@ -1,8 +1,8 @@
-# ReelCut — User Guide
+# Clipster — User Guide
 
-This guide is for **people who want to install and use ReelCut**, not for developers building the app from source.
+This guide is for **people who want to install and use Clipster**, not for developers building the app from source.
 
-ReelCut turns long videos into ready-to-post clips for **YouTube Shorts**, **TikTok**, and **Instagram Reels**.
+Clipster turns long videos into ready-to-post clips for **YouTube Shorts**, **TikTok**, and **Instagram Reels**.
 
 ---
 
@@ -26,47 +26,47 @@ Bundled with the app (you normally do **not** install these yourself):
 
 Open the latest release:
 
-**[https://github.com/Shaheer30/reelcut/releases/latest](https://github.com/Shaheer30/reelcut/releases/latest)**
+**[https://github.com/Shaheer30/clipster/releases/latest](https://github.com/Shaheer30/clipster/releases/latest)**
 
-Or the current production build (**v1.0.2**):
+Or the current production build (**v1.1.0**):
 
-**[https://github.com/Shaheer30/reelcut/releases/tag/v1.0.2](https://github.com/Shaheer30/reelcut/releases/tag/v1.0.2)**
+**[https://github.com/Shaheer30/clipster/releases/tag/v1.1.0](https://github.com/Shaheer30/clipster/releases/tag/v1.1.0)**
 
 | Your computer | Download this file |
 |---|---|
-| **Windows** | `ReelCut-Setup-1.0.2.exe` |
-| **macOS** | `ReelCut-1.0.2-mac.dmg` |
-| **Linux (any)** | `ReelCut-1.0.2-x86_64.AppImage` |
-| **Ubuntu / Debian** | `ReelCut-1.0.2-amd64.deb` |
+| **Windows** | `Clipster-Setup-1.1.0.exe` |
+| **macOS** | `Clipster-1.1.0-mac.dmg` |
+| **Linux (any)** | `Clipster-1.1.0-x86_64.AppImage` |
+| **Ubuntu / Debian** | `Clipster-1.1.0-amd64.deb` |
 
 ---
 
-## 3. Install ReelCut
+## 3. Install Clipster
 
 ### Windows
 
-1. Download `ReelCut-Setup-1.0.2.exe`.
+1. Download `Clipster-Setup-1.1.0.exe`.
 2. Double-click the file.
 3. If Windows SmartScreen appears, choose **More info** → **Run anyway** (common for new apps).
 4. Follow the installer:
    - Choose the install folder (default is fine)
    - Allow desktop / Start menu shortcuts
-5. Click **Finish** and open **ReelCut**.
+5. Click **Finish** and open **Clipster**.
 6. Confirm the top badges show **FFmpeg ready** and **yt-dlp ready**.  
    **Whisper** may say optional/missing until you install it (section 5).
 
 **Upgrading from an older version**
 
-1. Close ReelCut.
+1. Close Clipster.
 2. Uninstall the old version from **Settings → Apps** (recommended).
 3. Install the new setup `.exe`.
-4. Open ReelCut and try a short test clip.
+4. Open Clipster and try a short test clip.
 
 ### macOS
 
-1. Download `ReelCut-1.0.2-mac.dmg`.
-2. Open the DMG and drag **ReelCut** into **Applications**.
-3. First launch: right-click ReelCut → **Open** (macOS may block unsigned apps once).
+1. Download `Clipster-1.1.0-mac.dmg`.
+2. Open the DMG and drag **Clipster** into **Applications**.
+3. First launch: right-click Clipster → **Open** (macOS may block unsigned apps once).
 4. Confirm the tool badges in the app header.
 
 ### Linux
@@ -74,25 +74,25 @@ Or the current production build (**v1.0.2**):
 **AppImage**
 
 ```bash
-chmod +x ReelCut-1.0.2-x86_64.AppImage
-./ReelCut-1.0.2-x86_64.AppImage
+chmod +x Clipster-1.1.0-x86_64.AppImage
+./Clipster-1.1.0-x86_64.AppImage
 ```
 
 **Debian / Ubuntu (.deb)**
 
 ```bash
-sudo dpkg -i ReelCut-1.0.2-amd64.deb
+sudo dpkg -i Clipster-1.1.0-amd64.deb
 # if dependencies are missing:
 sudo apt-get install -f
 ```
 
-Then launch **ReelCut** from your app menu.
+Then launch **Clipster** from your app menu.
 
 ---
 
 ## 4. First launch checklist
 
-When ReelCut opens, check the header pills:
+When Clipster opens, check the header pills:
 
 | Badge | Meaning |
 |---|---|
@@ -103,8 +103,8 @@ When ReelCut opens, check the header pills:
 
 Default export folder:
 
-- Windows: `C:\Users\<YourName>\ReelCut\exports`
-- macOS / Linux: `~/ReelCut/exports`
+- Windows: `C:\Users\<YourName>\Clipster\exports`
+- macOS / Linux: `~/Clipster/exports`
 
 You can change this with the **Folder** button.
 
@@ -112,16 +112,16 @@ You can change this with the **Folder** button.
 
 ## 5. Optional: install Whisper (auto subtitles)
 
-Skip this whole section if you do **not** need burned-in captions. ReelCut still works without Whisper.
+Skip this whole section if you do **not** need burned-in captions. Clipster still works without Whisper.
 
 ### What Whisper does
 
-Whisper listens to the video audio and creates **automatic subtitles** that ReelCut burns into your Shorts / TikTok / Reels clips.
+Whisper listens to the video audio and creates **automatic subtitles** that Clipster burns into your Shorts / TikTok / Reels clips.
 
 Official project: [https://github.com/openai/whisper](https://github.com/openai/whisper)
 
 > **Important:** You do **not** need Node.js for Whisper.  
-> Node.js is only for developers who build ReelCut from source.  
+> Node.js is only for developers who build Clipster from source.  
 > For subtitles you only need: **① Python** → **② Whisper**.
 
 ---
@@ -172,8 +172,8 @@ python -m pip install -U openai-whisper
 python -m whisper --help
 ```
 
-5. Fully close **ReelCut**, then open it again.
-6. In the ReelCut header, you should now see **Whisper ready**.
+5. Fully close **Clipster**, then open it again.
+6. In the Clipster header, you should now see **Whisper ready**.
 7. Turn **Auto subtitles** ON and create a test clip.
 
 **Package page (optional reading):**  
@@ -206,7 +206,7 @@ pip3 install -U openai-whisper
 whisper --help
 ```
 
-Restart ReelCut → confirm **Whisper ready**.
+Restart Clipster → confirm **Whisper ready**.
 
 ---
 
@@ -230,7 +230,7 @@ python3 -m pip install -U openai-whisper
 whisper --help
 ```
 
-Restart ReelCut → confirm **Whisper ready**.
+Restart Clipster → confirm **Whisper ready**.
 
 ---
 
@@ -275,7 +275,7 @@ Restart ReelCut → confirm **Whisper ready**.
 ### C) Export folder
 
 1. Click **Folder** to pick where finished MP4s are saved.  
-2. Or leave the default `ReelCut/exports` folder.
+2. Or leave the default `Clipster/exports` folder.
 
 ### D) Start processing
 
@@ -305,7 +305,7 @@ Prefer **9:16** exports for those platforms.
 
 For a reliable “ready to post” workflow:
 
-1. Use **v1.0.2+** installer from GitHub Releases.  
+1. Use **v1.1.0+** installer from GitHub Releases.  
 2. Confirm **FFmpeg ready** + **yt-dlp ready**.  
 3. Install Whisper if you need captions → **Whisper ready**.  
 4. Use a clear source video (decent audio if you want subtitles).  
@@ -334,17 +334,17 @@ For a reliable “ready to post” workflow:
 
 ### `ffmpeg.exe ENOENT` / spawn error on Windows
 
-You are on an old build. Install **v1.0.2 or newer**:
+You are on an old build. Install **v1.1.0 or newer**:
 
-[ReelCut-Setup-1.0.2.exe](https://github.com/Shaheer30/reelcut/releases/download/v1.0.2/ReelCut-Setup-1.0.2.exe)
+[Clipster-Setup-1.1.0.exe](https://github.com/Shaheer30/clipster/releases/download/v1.1.0/Clipster-Setup-1.1.0.exe)
 
-Uninstall the previous ReelCut first, then install again.
+Uninstall the previous Clipster first, then install again.
 
 ### Whisper badge missing / “exporting without burned-in subtitles”
 
 1. Install Whisper (section 5).  
 2. Restart the computer if PATH was just updated.  
-3. Reopen ReelCut.  
+3. Reopen Clipster.  
 4. Or turn **Auto subtitles** OFF and continue without captions.
 
 ### YouTube download fails
@@ -361,10 +361,10 @@ Choose a shorter clip length (1 or 2 minutes), or use a longer source video.
 
 ### Export is very slow
 
-That is normal for very long sources with many clips, but **v1.0.3+** is much faster.
+That is normal for very long sources with many clips, but **v1.1.0+** is much faster.
 
 Tips:
-- Use **v1.0.3 or newer**
+- Use **v1.1.0 or newer**
 - Turn **Auto subtitles** OFF if you do not need captions (Whisper is the slowest step)
 - Prefer **2 or 3 minute** clips (fewer files to encode) for a first pass
 - Keep **Enhanced quality** ON — it no longer uses the ultra-slow encoder preset
@@ -375,7 +375,7 @@ A 20–30 minute video should usually finish in minutes on a modern PC, not an h
 
 1. Confirm the header shows **Whisper ready**
 2. Keep **Auto subtitles** ON
-3. Use **ReelCut 1.0.3+** (fixes Windows caption burn-in + auto language detection)
+3. Use **Clipster 1.1.0+** (fixes Windows caption burn-in + auto language detection)
 4. Make sure the video has clear speech (not music-only)
 5. Watch the log for:
    - `Whisper not installed`
@@ -404,22 +404,22 @@ Choose **More info** → **Run anyway**. The app is distributed from your GitHub
 
 ### Windows
 
-**Settings → Apps → Installed apps → ReelCut → Uninstall**
+**Settings → Apps → Installed apps → Clipster → Uninstall**
 
 You may manually delete leftover folders if desired:
 
-- `%LOCALAPPDATA%\Programs\ReelCut`
-- `%USERPROFILE%\ReelCut\exports`
+- `%LOCALAPPDATA%\Programs\Clipster`
+- `%USERPROFILE%\Clipster\exports`
 
 ### macOS
 
-Delete **ReelCut** from **Applications**.
+Delete **Clipster** from **Applications**.
 
 ### Linux
 
 ```bash
 # deb install
-sudo apt remove reelcut
+sudo apt remove clipster
 # AppImage: just delete the .AppImage file
 ```
 
@@ -427,26 +427,26 @@ sudo apt remove reelcut
 
 ## 12. Getting help
 
-1. Check the log panel inside ReelCut (right side).  
+1. Check the log panel inside Clipster (right side).  
 2. Confirm you are on the latest release.  
 3. Open an issue on GitHub with:
    - Your OS (Windows / macOS / Linux)
-   - ReelCut version
+   - Clipster version
    - Screenshot of the error
    - Whether source was local file or YouTube URL
 
-Repository: [https://github.com/Shaheer30/reelcut](https://github.com/Shaheer30/reelcut)  
-Releases: [https://github.com/Shaheer30/reelcut/releases](https://github.com/Shaheer30/reelcut/releases)
+Repository: [https://github.com/Shaheer30/clipster](https://github.com/Shaheer30/clipster)  
+Releases: [https://github.com/Shaheer30/clipster/releases](https://github.com/Shaheer30/clipster/releases)
 
 ---
 
 ## Quick start (short version)
 
-1. Download **ReelCut-Setup** for your OS from Releases.  
-2. Install and open ReelCut.  
+1. Download **Clipster-Setup** for your OS from Releases.  
+2. Install and open Clipster.  
 3. (Optional, for auto subtitles only)
    - **Step 1:** Install Python → [python.org/downloads](https://www.python.org/downloads/) (check **Add to PATH**)
-   - **Step 2:** Run `pip install -U openai-whisper`, then restart ReelCut  
+   - **Step 2:** Run `pip install -U openai-whisper`, then restart Clipster  
 4. Import a video or paste a YouTube URL.  
 5. Pick **1/2/3 min**, **9:16 or 16:9**, quality + subtitles.  
 6. Click **Create clips**.  

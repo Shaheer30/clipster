@@ -1,14 +1,14 @@
 {
-  "name": "reelcut",
-  "version": "1.0.4",
-  "description": "Desktop app for clipping videos into ready-to-post Shorts, TikTok, and Reels",
+  "name": "clipster",
+  "version": "1.1.0",
+  "description": "Dark-luxury desktop app for clipping videos into ready-to-post Shorts, TikTok, and Reels",
   "main": "./out/main/index.js",
   "author": {
-    "name": "ReelCut",
+    "name": "Clipster",
     "email": "shaheer30@users.noreply.github.com"
   },
   "license": "MIT",
-  "homepage": "https://github.com/Shaheer30/reelcut",
+  "homepage": "https://github.com/Shaheer30/clipster",
   "scripts": {
     "dev": "electron-vite dev -- --no-sandbox --disable-gpu --disable-dev-shm-usage",
     "build": "electron-vite build",
@@ -37,8 +37,8 @@
     "vite": "^5.4.11"
   },
   "build": {
-    "appId": "com.reelcut.app",
-    "productName": "ReelCut",
+    "appId": "com.clipster.app",
+    "productName": "Clipster",
     "directories": {
       "output": "release",
       "buildResources": "resources"
@@ -52,9 +52,12 @@
       {
         "from": "resources/bin",
         "to": "bin",
-        "filter": [
-          "**/*"
-        ]
+        "filter": ["**/*"]
+      },
+      {
+        "from": "resources/branding",
+        "to": "branding",
+        "filter": ["**/*"]
       }
     ],
     "asarUnpack": [
@@ -62,39 +65,27 @@
       "**/node_modules/ffprobe-static/**/*"
     ],
     "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "artifactName": "ReelCut-Setup-${version}.${ext}"
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "artifactName": "Clipster-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "ReelCut"
+      "shortcutName": "Clipster"
     },
     "mac": {
-      "target": [
-        "dmg"
-      ],
-      "artifactName": "ReelCut-${version}-mac.${ext}",
+      "target": ["dmg"],
+      "artifactName": "Clipster-${version}-mac.${ext}",
       "category": "public.app-category.video"
     },
     "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "artifactName": "ReelCut-${version}-${arch}.${ext}",
+      "target": ["AppImage", "deb"],
+      "artifactName": "Clipster-${version}-${arch}.${ext}",
       "category": "AudioVideo",
       "desktop": {
-        "Name": "ReelCut",
+        "Name": "Clipster",
         "Comment": "Clip videos into ready-to-post shorts",
         "Categories": "AudioVideo;Video;"
       }
@@ -103,7 +94,7 @@
       {
         "provider": "github",
         "owner": "Shaheer30",
-        "repo": "reelcut"
+        "repo": "clipster"
       }
     ]
   }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { AspectRatio, ClipDuration, ClipJobProgress, ClipSegment, SourceInfo } from './vite-env'
+import markUrl from './assets/clipster-mark.png'
 
 type SourceMode = 'file' | 'youtube'
 
@@ -33,7 +34,7 @@ function statusLabel(status: ClipJobProgress['status']): string {
   }
 }
 
-const hasApi = typeof window !== 'undefined' && !!window.reelcut
+const hasApi = typeof window !== 'undefined' && !!window.clipster
 
 export default function App() {
   const [mode, setMode] = useState<SourceMode>('file')
@@ -58,9 +59,9 @@ export default function App() {
 
   useEffect(() => {
     if (!hasApi) return
-    void window.reelcut.getDefaultOutputDir().then(setOutputDir)
-    void window.reelcut.checkTools().then(setTools)
-    const off = window.reelcut.onProgress((p) => {
+    void window.clipster.getDefaultOutputDir().then(setOutputDir)
+    void window.clipster.checkTools().then(setTools)
+    const off = window.clipster.onProgress((p) => {
       setProgress(p)
       if (p.message) {
         setLogLines((prev) => [...prev.slice(-80), p.message])
@@ -86,12 +87,12 @@ export default function App() {
 
   async function pickFile() {
     if (!hasApi) return
-    const path = await window.reelcut.selectVideoFile()
+    const path = await window.clipster.selectVideoFile()
     if (!path) return
     setFilePath(path)
     setMode('file')
     try {
-      const info = await window.reelcut.getSourceInfo(path)
+      const info = await window.clipster.getSourceInfo(path)
       setSourceInfo(info)
       setProgress({
         status: 'idle',
@@ -111,7 +112,7 @@ export default function App() {
 
   async function pickOutput() {
     if (!hasApi) return
-    const dir = await window.reelcut.selectOutputDir()
+    const dir = await window.clipster.selectOutputDir()
     if (dir) setOutputDir(dir)
   }
 
@@ -122,7 +123,7 @@ export default function App() {
     setLogLines([])
     setProgress({ status: 'analyzing', message: 'Starting job…', percent: 2 })
     try {
-      const { jobId: id } = await window.reelcut.startJob({
+      const { jobId: id } = await window.clipster.startJob({
         sourceType: mode,
         sourcePath: mode === 'file' ? filePath || undefined : undefined,
         youtubeUrl: mode === 'youtube' ? youtubeUrl.trim() : undefined,
@@ -146,7 +147,7 @@ export default function App() {
 
   async function cancel() {
     if (!jobId || !hasApi) return
-    await window.reelcut.cancelJob(jobId)
+    await window.clipster.cancelJob(jobId)
     setBusy(false)
     setJobId(null)
     setProgress({ status: 'idle', message: 'Cancelled.', percent: 0 })
@@ -156,10 +157,10 @@ export default function App() {
     <div className="app-shell">
       <header className="topbar">
         <div className="brand">
-          <div className="brand-mark" aria-hidden />
+          <img className="brand-mark" src={markUrl} alt="" />
           <div>
-            <h1>ReelCut</h1>
-            <p>Clip, caption, and export shorts ready to post</p>
+            <h1>Clipster</h1>
+            <p>Precision clips for Shorts, TikTok, and Reels</p>
           </div>
         </div>
         <div className="tool-pills" title="Local processing tools">
@@ -173,7 +174,7 @@ export default function App() {
       {!tools.whisper && (
         <p className="whisper-hint">
           Auto subtitles need Whisper. Install Python, then run{' '}
-          <code>pip install -U openai-whisper</code>, restart ReelCut, and this badge should turn green.
+          <code>pip install -U openai-whisper</code>, restart Clipster, and this badge should turn green.
         </p>
       )}
 
@@ -325,14 +326,14 @@ export default function App() {
                 Folder
               </button>
             </div>
-            <div className="muted-path">{outputDir || 'Exports go to ~/ReelCut/exports'}</div>
+            <div className="muted-path">{outputDir || 'Exports go to ~/Clipster/exports'}</div>
           </div>
         </section>
 
         <section className="panel progress-panel">
           <div className="panel-header">
             <h2>Export status</h2>
-            <p>Progress, logs, and finished files appear here while ReelCut processes locally.</p>
+            <p>Progress, logs, and finished files appear here while Clipster processes locally.</p>
           </div>
           <div className="panel-body" style={{ flex: 1 }}>
             <div>
@@ -367,7 +368,7 @@ export default function App() {
                     <button
                       type="button"
                       className="btn btn-ghost"
-                      onClick={() => void window.reelcut.openPath(seg.outputPath)}
+                      onClick={() => void window.clipster.openPath(seg.outputPath)}
                     >
                       Open
                     </button>
@@ -376,7 +377,7 @@ export default function App() {
                 <button
                   type="button"
                   className="btn btn-ghost"
-                  onClick={() => void window.reelcut.openPath(outputDir)}
+                  onClick={() => void window.clipster.openPath(outputDir)}
                 >
                   Open export folder
                 </button>

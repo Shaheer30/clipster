@@ -1,6 +1,15 @@
 export type ClipDuration = 60 | 120 | 180
 export type AspectRatio = '16:9' | '9:16'
-export type JobStatus = 'idle' | 'downloading' | 'analyzing' | 'transcribing' | 'clipping' | 'enhancing' | 'subtitling' | 'done' | 'error'
+export type JobStatus =
+  | 'idle'
+  | 'downloading'
+  | 'analyzing'
+  | 'transcribing'
+  | 'clipping'
+  | 'enhancing'
+  | 'subtitling'
+  | 'done'
+  | 'error'
 
 export interface ClipJobRequest {
   sourceType: 'file' | 'youtube'
@@ -37,7 +46,7 @@ export interface SourceInfo {
   path: string
 }
 
-export interface ReelCutApi {
+export interface ClipsterApi {
   selectVideoFile: () => Promise<string | null>
   selectOutputDir: () => Promise<string | null>
   getSourceInfo: (path: string) => Promise<SourceInfo>
@@ -52,7 +61,7 @@ export interface ReelCutApi {
 
 declare global {
   interface Window {
-    reelcut: ReelCutApi
+    clipster: ClipsterApi
   }
 }
 

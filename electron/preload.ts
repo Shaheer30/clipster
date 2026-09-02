@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { ClipJobRequest, ClipJobProgress, ReelCutApi } from '../src/vite-env'
+import type { ClipJobRequest, ClipJobProgress, ClipsterApi } from '../src/vite-env'
 
-const api: ReelCutApi = {
+const api: ClipsterApi = {
   selectVideoFile: () => ipcRenderer.invoke('dialog:selectVideo'),
   selectOutputDir: () => ipcRenderer.invoke('dialog:selectOutputDir'),
   getSourceInfo: (path) => ipcRenderer.invoke('source:info', path),
@@ -20,4 +20,4 @@ const api: ReelCutApi = {
   }
 }
 
-contextBridge.exposeInMainWorld('reelcut', api)
+contextBridge.exposeInMainWorld('clipster', api)
