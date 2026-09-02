@@ -12,6 +12,7 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
@@ -47,12 +48,21 @@ jobs:
         run: npm run ${{ matrix.script }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Upload artifacts
+      - name: Upload installers
         uses: actions/upload-artifact@v4
         with:
           name: ReelCut-${{ matrix.os }}
-          path: release/*
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+            release/*.AppImage
+            release/*.deb
+            release/*.yml
+            release/*.blockmap
+          if-no-files-found: error
 
   publish:
     needs: build
@@ -63,10 +73,40 @@ jobs:
         with:
           path: artifacts
 
+      - name: Collect release files
+        shell: bash
+        run: |
+          mkdir -p dist-upload
+          find artifacts -type f \( \
+            -name '*.exe' -o -name '*.dmg' -o -name '*.zip' -o \
+            -name '*.AppImage' -o -name '*.deb' -o -name '*.yml' -o -name '*.blockmap' \
+          \) -exec cp -v {} dist-upload/ \;
+          ls -lah dist-upload
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
+          draft: false
+          prerelease: false
           generate_release_notes: true
+          body: |
+            ## ReelCut ${{ github.ref_name }}
+
+            Download the installer for your system:
+
+            | Platform | File |
+            |---|---|
+            | **Windows** | `ReelCut-Setup-*.exe` |
+            | **macOS** | `ReelCut-*-mac.dmg` |
+            | **Linux** | `ReelCut-*.AppImage` or `.deb` |
+
+            ### After install
+            1. Open **ReelCut**
+            2. Import a local video or paste a YouTube URL
+            3. Choose clip length (1 / 2 / 3 min) and aspect ratio (9:16 or 16:9)
+            4. Export ready-to-post Shorts, TikTok, and Reels clips
+
+            **Note:** Auto-subtitles need [Whisper](https://github.com/openai/whisper) installed on the machine. YouTube downloads need [yt-dlp](https://github.com/yt-dlp/yt-dlp) (bundled in the app resources when available).
+          files: dist-upload/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
