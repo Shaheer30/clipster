@@ -20,27 +20,59 @@ function loadOptional<T>(name: string): T | null {
 
 const cancelled = new Set<string>()
 
+/** Electron cannot spawn binaries from inside app.asar — use the unpacked twin. */
+function fixPackagedBinaryPath(binaryPath: string): string {
+  if (!binaryPath) return binaryPath
+  // Avoid double-rewriting paths that are already unpacked
+  return binaryPath.replace(/app\.asar(?!\.unpacked)/g, 'app.asar.unpacked')
+}
+
+function bundledBinName(tool: 'ffmpeg' | 'ffprobe' | 'yt-dlp'): string {
+  if (platform() === 'win32') {
+    return tool === 'yt-dlp' ? 'yt-dlp.exe' : `${tool}.exe`
+  }
+  return tool
+}
+
+function resourceBinPath(tool: 'ffmpeg' | 'ffprobe' | 'yt-dlp'): string | null {
+  const name = bundledBinName(tool)
+  const candidates = [
+    process.resourcesPath ? join(process.resourcesPath, 'bin', name) : '',
+    join(process.cwd(), 'resources', 'bin', name)
+  ].filter(Boolean)
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate
+  }
+  return null
+}
+
 function getFfmpegPath(): string {
+  const bundled = resourceBinPath('ffmpeg')
+  if (bundled) return bundled
+
   const p = loadOptional<string>('ffmpeg-static')
-  if (p && existsSync(p)) return p
+  if (p) {
+    const fixed = fixPackagedBinaryPath(p)
+    if (existsSync(fixed)) return fixed
+  }
   return 'ffmpeg'
 }
 
 function getFfprobePath(): string {
+  const bundled = resourceBinPath('ffprobe')
+  if (bundled) return bundled
+
   const ffprobe = loadOptional<{ path: string }>('ffprobe-static')
-  if (ffprobe?.path && existsSync(ffprobe.path)) return ffprobe.path
+  if (ffprobe?.path) {
+    const fixed = fixPackagedBinaryPath(ffprobe.path)
+    if (existsSync(fixed)) return fixed
+  }
   return 'ffprobe'
 }
 
 function getYtDlpPath(): string {
-  const resourceBin = process.resourcesPath
-    ? join(process.resourcesPath, 'bin', platform() === 'win32' ? 'yt-dlp.exe' : 'yt-dlp')
-    : ''
-  if (resourceBin && existsSync(resourceBin)) return resourceBin
-
-  const localBin = join(process.cwd(), 'resources', 'bin', platform() === 'win32' ? 'yt-dlp.exe' : 'yt-dlp')
-  if (existsSync(localBin)) return localBin
-
+  const bundled = resourceBinPath('yt-dlp')
+  if (bundled) return bundled
   return 'yt-dlp'
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "reelcut",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Desktop app for clipping videos into ready-to-post Shorts, TikTok, and Reels",
   "main": "./out/main/index.js",
   "author": {
@@ -12,11 +12,12 @@
   "scripts": {
     "dev": "electron-vite dev -- --no-sandbox --disable-gpu --disable-dev-shm-usage",
     "build": "electron-vite build",
+    "prepare:binaries": "node scripts/prepare-binaries.js",
     "preview": "electron-vite preview -- --no-sandbox --disable-gpu --disable-dev-shm-usage",
-    "dist": "npm run build && electron-builder",
-    "dist:win": "npm run build && electron-builder --win",
-    "dist:mac": "npm run build && electron-builder --mac",
-    "dist:linux": "npm run build && electron-builder --linux",
+    "dist": "npm run prepare:binaries && npm run build && electron-builder",
+    "dist:win": "npm run prepare:binaries && npm run build && electron-builder --win",
+    "dist:mac": "npm run prepare:binaries && npm run build && electron-builder --mac",
+    "dist:linux": "npm run prepare:binaries && npm run build && electron-builder --linux",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -57,8 +58,8 @@
       }
     ],
     "asarUnpack": [
-      "**/node_modules/ffmpeg-static/**",
-      "**/node_modules/ffprobe-static/**"
+      "**/node_modules/ffmpeg-static/**/*",
+      "**/node_modules/ffprobe-static/**/*"
     ],
     "win": {
       "target": [

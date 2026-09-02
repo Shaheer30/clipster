@@ -44,6 +44,9 @@ jobs:
             chmod +x resources/bin/yt-dlp
           fi
 
+      - name: Stage ffmpeg binaries for packaging
+        run: npm run prepare:binaries
+
       - name: Build installer
         run: npm run ${{ matrix.script }}
         env:
