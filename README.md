@@ -4,12 +4,13 @@ Desktop app that turns long videos into ready-to-post **YouTube Shorts**, **TikT
 
 ## Download installers
 
-Get the latest setup files from **[GitHub Releases](https://github.com/Shaheer30/reelcut/releases/tag/v1.0.0)**:
+Get the latest setup files from **[GitHub Releases](https://github.com/Shaheer30/reelcut/releases/tag/v1.0.1)**:
 
 | Platform | Download |
 |---|---|
-| **Windows** | [ReelCut-Setup-1.0.0.exe](https://github.com/Shaheer30/reelcut/releases/download/v1.0.0/ReelCut-Setup-1.0.0.exe) |
-| **Linux** | [AppImage](https://github.com/Shaheer30/reelcut/releases/download/v1.0.0/ReelCut-1.0.0-x86_64.AppImage) · [Deb](https://github.com/Shaheer30/reelcut/releases/download/v1.0.0/ReelCut-1.0.0-amd64.deb) |
+| **Windows** | [ReelCut-Setup-1.0.1.exe](https://github.com/Shaheer30/reelcut/releases/download/v1.0.1/ReelCut-Setup-1.0.1.exe) |
+| **macOS** | [ReelCut-1.0.1-mac.dmg](https://github.com/Shaheer30/reelcut/releases/download/v1.0.1/ReelCut-1.0.1-mac.dmg) |
+| **Linux** | [AppImage](https://github.com/Shaheer30/reelcut/releases/download/v1.0.1/ReelCut-1.0.1-x86_64.AppImage) · [Deb](https://github.com/Shaheer30/reelcut/releases/download/v1.0.1/ReelCut-1.0.1-amd64.deb) |
 
 ## Features
 
@@ -54,7 +55,7 @@ This opens the **ReelCut** Electron window. Exports default to `~/ReelCut/export
 npm run dist
 
 # Explicit targets
-npm run dist:win    # NSIS setup: release/ReelCut-Setup-1.0.0.exe
+npm run dist:win    # NSIS setup: release/ReelCut-Setup-1.0.1.exe
 npm run dist:mac    # DMG
 npm run dist:linux  # AppImage + .deb
 ```
@@ -63,7 +64,7 @@ Installers are written to the `release/` folder. Attach those artifacts to a **G
 
 ### Publish a GitHub Release
 
-1. Push a version tag, for example `v1.0.0`
+1. Push a version tag, for example `v1.0.1`
 2. GitHub Actions (`.github/workflows/release.yml`) builds Windows, macOS, and Linux packages
 3. Users download the setup from the Releases page and install
 
