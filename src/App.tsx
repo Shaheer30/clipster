@@ -166,10 +166,16 @@ export default function App() {
           <span className={`pill ${tools.ffmpeg ? 'ok' : 'bad'}`}>FFmpeg {tools.ffmpeg ? 'ready' : 'missing'}</span>
           <span className={`pill ${tools.ytDlp ? 'ok' : 'bad'}`}>yt-dlp {tools.ytDlp ? 'ready' : 'missing'}</span>
           <span className={`pill ${tools.whisper ? 'ok' : 'bad'}`}>
-            Whisper {tools.whisper ? 'ready' : 'optional'}
+            Whisper {tools.whisper ? 'ready' : 'not installed'}
           </span>
         </div>
       </header>
+      {!tools.whisper && (
+        <p className="whisper-hint">
+          Auto subtitles need Whisper. Install Python, then run{' '}
+          <code>pip install -U openai-whisper</code>, restart ReelCut, and this badge should turn green.
+        </p>
+      )}
 
       <main className="workspace">
         <section className="panel">

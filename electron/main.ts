@@ -1,16 +1,54 @@
 import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
-import { join } from 'path'
+import { join, delimiter } from 'path'
 import { homedir } from 'os'
 import { existsSync, mkdirSync } from 'fs'
+import { execFileSync } from 'child_process'
 import { probeVideo, processClipJob, cancelJob, checkTools } from './pipeline'
 import type { ClipJobRequest } from '../src/vite-env'
 
-// Ensure user-local CLIs (whisper, yt-dlp) are discoverable in packaged + dev runs
-process.env.PATH = [
-  join(homedir(), '.local', 'bin'),
-  '/usr/local/bin',
-  process.env.PATH || ''
-].join(':')
+function refreshPath(): void {
+  const extras: string[] = []
+
+  if (process.platform === 'win32') {
+    try {
+      const userPath = execFileSync(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-Command',
+          "[Environment]::GetEnvironmentVariable('Path','User')"
+        ],
+        { encoding: 'utf8', windowsHide: true, timeout: 8000 }
+      ).trim()
+      const machinePath = execFileSync(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-Command',
+          "[Environment]::GetEnvironmentVariable('Path','Machine')"
+        ],
+        { encoding: 'utf8', windowsHide: true, timeout: 8000 }
+      ).trim()
+      if (userPath) extras.push(userPath)
+      if (machinePath) extras.push(machinePath)
+    } catch {
+      /* ignore */
+    }
+
+    const local = process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local')
+    extras.push(
+      join(local, 'Python', 'bin'),
+      join(local, 'Programs', 'Python'),
+      join(homedir(), '.local', 'bin')
+    )
+  } else {
+    extras.push(join(homedir(), '.local', 'bin'), '/usr/local/bin')
+  }
+
+  process.env.PATH = [...extras, process.env.PATH || ''].filter(Boolean).join(delimiter)
+}
+
+refreshPath()
 
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -61,6 +99,7 @@ function defaultOutputDir(): string {
 }
 
 app.whenReady().then(() => {
+  refreshPath()
   createWindow()
 
   ipcMain.handle('dialog:selectVideo', async () => {
@@ -105,7 +144,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('app:defaultOutputDir', async () => defaultOutputDir())
 
-  ipcMain.handle('app:checkTools', async () => checkTools())
+  ipcMain.handle('app:checkTools', async () => {
+    refreshPath()
+    return checkTools()
+  })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

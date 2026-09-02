@@ -1,6 +1,6 @@
 {
   "name": "reelcut",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Desktop app for clipping videos into ready-to-post Shorts, TikTok, and Reels",
   "main": "./out/main/index.js",
   "author": {

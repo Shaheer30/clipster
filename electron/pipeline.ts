@@ -1,7 +1,7 @@
 import { spawn, execFile } from 'child_process'
 import { promisify } from 'util'
 import { existsSync, mkdirSync, writeFileSync, readdirSync, readFileSync } from 'fs'
-import { join, basename, extname } from 'path'
+import { join, basename, extname, sep } from 'path'
 import { platform } from 'os'
 import type { ClipJobRequest, ClipJobProgress, ClipSegment, SourceInfo } from '../src/vite-env'
 
@@ -83,8 +83,75 @@ async function resolveWhisper(): Promise<{ cmd: string; prefix: string[] } | nul
     { cmd: 'python3', prefix: ['-m', 'whisper'] },
     { cmd: 'py', prefix: ['-3', '-m', 'whisper'] }
   ]
+
+  if (platform() === 'win32') {
+    const home = process.env.USERPROFILE || process.env.HOME || ''
+    const local = process.env.LOCALAPPDATA || join(home, 'AppData', 'Local')
+
+    // Python Install Manager / Store-style layout used by this user:
+    // C:\Users\<name>\AppData\Local\Python\bin
+    const winBinDirs = [
+      join(local, 'Python', 'bin'),
+      join(home, 'AppData', 'Local', 'Python', 'bin')
+    ]
+    for (const dir of winBinDirs) {
+      const whisperExe = join(dir, 'whisper.exe')
+      const pythonExe = join(dir, 'python.exe')
+      if (existsSync(whisperExe)) candidates.unshift({ cmd: whisperExe, prefix: [] })
+      if (existsSync(pythonExe)) candidates.unshift({ cmd: pythonExe, prefix: ['-m', 'whisper'] })
+    }
+
+    const classicRoots = [
+      join(local, 'Programs', 'Python'),
+      join(home, 'AppData', 'Local', 'Programs', 'Python'),
+      join(home, 'AppData', 'Roaming', 'Python')
+    ]
+    for (const root of classicRoots) {
+      if (!root || !existsSync(root)) continue
+      try {
+        for (const entry of readdirSync(root)) {
+          const scripts = join(root, entry, 'Scripts', 'whisper.exe')
+          if (existsSync(scripts)) candidates.unshift({ cmd: scripts, prefix: [] })
+          const py = join(root, entry, 'python.exe')
+          if (existsSync(py)) candidates.push({ cmd: py, prefix: ['-m', 'whisper'] })
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  // If whisper.exe exists on disk, trust it (GUI apps often miss PATH updates)
   for (const candidate of candidates) {
-    if (await canRun(candidate.cmd, [...candidate.prefix, '--help'])) return candidate
+    const lower = candidate.cmd.toLowerCase()
+    if (
+      candidate.prefix.length === 0 &&
+      (lower.endsWith('whisper.exe') || lower.endsWith(`${sep}whisper`) || lower === 'whisper') &&
+      (lower === 'whisper' || existsSync(candidate.cmd))
+    ) {
+      if (lower !== 'whisper' && existsSync(candidate.cmd)) return candidate
+    }
+  }
+
+  // Fast check: does the whisper package import without launching the heavy CLI?
+  for (const candidate of candidates) {
+    if (candidate.prefix[0] === '-m' || candidate.cmd.toLowerCase().includes('python')) {
+      const py = candidate.cmd
+      if (py !== 'python' && py !== 'python3' && py !== 'py' && !existsSync(py)) continue
+      const ok = await canRun(
+        py,
+        [
+          '-c',
+          "import importlib.util,sys;sys.exit(0 if importlib.util.find_spec('whisper') else 1)"
+        ],
+        20000
+      )
+      if (ok) return { cmd: py, prefix: py === 'py' ? ['-3', '-m', 'whisper'] : ['-m', 'whisper'] }
+    }
+  }
+
+  for (const candidate of candidates) {
+    if (await canRun(candidate.cmd, [...candidate.prefix, '--help'], 90000)) return candidate
   }
   return null
 }
@@ -96,9 +163,9 @@ export async function checkTools(): Promise<{ ffmpeg: boolean; ytDlp: boolean; w
   return { ffmpeg: ffmpegOk, ytDlp: ytOk, whisper: whisperOk }
 }
 
-async function canRun(cmd: string, args: string[]): Promise<boolean> {
+async function canRun(cmd: string, args: string[], timeoutMs = 15000): Promise<boolean> {
   try {
-    await execFileAsync(cmd, args, { timeout: 15000 })
+    await execFileAsync(cmd, args, { timeout: timeoutMs, windowsHide: true })
     return true
   } catch {
     return false
