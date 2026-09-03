@@ -1,7 +1,7 @@
 import { spawn, execFile } from 'child_process'
 import { promisify } from 'util'
-import { existsSync, mkdirSync, writeFileSync, readdirSync, readFileSync } from 'fs'
-import { join, basename, extname, sep } from 'path'
+import { existsSync, mkdirSync, writeFileSync, readdirSync, readFileSync, copyFileSync } from 'fs'
+import { join, basename, dirname, delimiter, sep } from 'path'
 import { platform } from 'os'
 import type { ClipJobRequest, ClipJobProgress, ClipSegment, SourceInfo } from '../src/vite-env'
 
@@ -263,6 +263,89 @@ async function extractAudioForWhisper(
   return audioPath
 }
 
+function countSrtCues(srtPath: string): number {
+  if (!existsSync(srtPath)) return 0
+  const raw = readFileSync(srtPath, 'utf8').replace(/\r/g, '').trim()
+  if (!raw) return 0
+  return raw.split(/\n\n+/).filter((b) => b.includes('-->')).length
+}
+
+function systemFontsDir(): string | null {
+  if (platform() === 'win32') {
+    const windir = process.env.WINDIR || 'C:\\Windows'
+    const fonts = join(windir, 'Fonts')
+    return existsSync(fonts) ? fonts : null
+  }
+  if (platform() === 'darwin') {
+    for (const p of ['/System/Library/Fonts', '/Library/Fonts', '/System/Library/Fonts/Supplemental']) {
+      if (existsSync(p)) return p
+    }
+    return null
+  }
+  for (const p of ['/usr/share/fonts', '/usr/local/share/fonts', join(process.env.HOME || '', '.fonts')]) {
+    if (p && existsSync(p)) return p
+  }
+  return null
+}
+
+/** Escape an absolute path for use inside an ffmpeg filtergraph value. */
+function escapeFilterPath(p: string): string {
+  return p.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'")
+}
+
+/** Convert SRT → ASS so burn-in is reliable on Windows (libass). */
+function srtToAss(srtPath: string, assPath: string, aspect: '16:9' | '9:16' = '9:16'): void {
+  const raw = readFileSync(srtPath, 'utf8').replace(/\r/g, '')
+  const blocks = raw.split(/\n\n+/).map((b) => b.trim()).filter(Boolean)
+  const events: string[] = []
+
+  for (const block of blocks) {
+    const lines = block.split('\n')
+    const timeLine = lines.find((l) => l.includes('-->'))
+    if (!timeLine) continue
+    const [startStr, endStr] = timeLine.split('-->').map((s) => s.trim())
+    const text = lines
+      .filter((l) => l !== timeLine && !/^\d+$/.test(l))
+      .join('\\N')
+      .replace(/[{}]/g, '')
+    if (!text.trim()) continue
+    events.push(`Dialogue: 0,${srtTimeToAss(startStr)},${srtTimeToAss(endStr)},Default,,0,0,0,,${text}`)
+  }
+
+  const playResX = aspect === '9:16' ? 1080 : 1920
+  const playResY = aspect === '9:16' ? 1920 : 1080
+  const fontSize = aspect === '9:16' ? 64 : 52
+  const marginV = aspect === '9:16' ? 110 : 64
+
+  const ass = `[Script Info]
+ScriptType: v4.00+
+PlayResX: ${playResX}
+PlayResY: ${playResY}
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,${fontSize},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,3,5,0,2,80,80,${marginV},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+${events.join('\n')}
+`
+  writeFileSync(assPath, ass, 'utf8')
+}
+
+function srtTimeToAss(ts: string): string {
+  // 00:00:01,000 -> 0:00:01.00
+  const m = ts.match(/(\d+):(\d+):(\d+)[,.](\d+)/)
+  if (!m) return '0:00:00.00'
+  const h = Number(m[1])
+  const min = m[2]
+  const sec = m[3]
+  const cs = String(Math.floor(Number(m[4].padEnd(3, '0').slice(0, 3)) / 10)).padStart(2, '0')
+  return `${h}:${min}:${sec}.${cs}`
+}
+
 async function transcribe(
   videoPath: string,
   workDir: string,
@@ -277,15 +360,102 @@ async function transcribe(
   try {
     onLine('Extracting audio for faster transcription…')
     const audioPath = await extractAudioForWhisper(videoPath, workDir, onLine)
+    const absAudio = audioPath
+    const absOut = workDir
 
-    // Auto-detect language (do not force English). tiny model = fastest usable captions.
+    onLine(`Running Whisper (${basename(whisper.cmd)} ${whisper.prefix.join(' ')})…`)
     await runProcess(
       whisper.cmd,
       [
         ...whisper.prefix,
-        audioPath,
+        absAudio,
         '--model',
         'tiny',
+        '--task',
+        'transcribe',
+        '--output_format',
+        'srt',
+        '--output_dir',
+        absOut,
+        '--fp16',
+        'False',
+        '--verbose',
+        'True',
+        '--condition_on_previous_text',
+        'False'
+      ],
+      onLine
+      // no cwd — use absolute paths so Windows Python doesn't lose the output folder
+    )
+
+    const preferred = join(workDir, 'audio_16k.srt')
+    const candidates = [
+      preferred,
+      ...readdirSync(workDir)
+        .filter((f) => f.endsWith('.srt'))
+        .map((f) => join(workDir, f))
+    ]
+
+    const srtPath = candidates.find((p) => existsSync(p) && countSrtCues(p) > 0) || null
+    if (!srtPath) {
+      onLine('Whisper finished but no subtitle cues were written (check speech audio).')
+      onLine(`Work folder files: ${readdirSync(workDir).join(', ')}`)
+      return null
+    }
+
+    onLine(`Captions generated: ${countSrtCues(srtPath)} lines.`)
+    return srtPath
+  } catch (err) {
+    onLine(`Subtitle generation failed: ${(err as Error).message}`)
+    return null
+  }
+}
+
+async function transcribeClipAudio(
+  inputVideo: string,
+  start: number,
+  duration: number,
+  workDir: string,
+  index: number,
+  onLine: (line: string) => void
+): Promise<string | null> {
+  const whisper = await resolveWhisper()
+  if (!whisper) return null
+  const ffmpeg = getFfmpegPath()
+  const wav = join(workDir, `clip_${index}.wav`)
+
+  try {
+    await runProcess(
+      ffmpeg,
+      [
+        '-y',
+        '-ss',
+        String(start),
+        '-t',
+        String(duration),
+        '-i',
+        inputVideo,
+        '-vn',
+        '-ac',
+        '1',
+        '-ar',
+        '16000',
+        '-c:a',
+        'pcm_s16le',
+        wav
+      ],
+      onLine
+    )
+
+    await runProcess(
+      whisper.cmd,
+      [
+        ...whisper.prefix,
+        wav,
+        '--model',
+        'tiny',
+        '--task',
+        'transcribe',
         '--output_format',
         'srt',
         '--output_dir',
@@ -297,25 +467,18 @@ async function transcribe(
         '--condition_on_previous_text',
         'False'
       ],
-      onLine,
-      workDir
+      onLine
     )
 
-    const preferred = join(workDir, 'audio_16k.srt')
-    if (existsSync(preferred) && readFileSync(preferred, 'utf8').trim()) return preferred
-
+    const produced = join(workDir, `clip_${index}.srt`)
+    if (existsSync(produced) && countSrtCues(produced) > 0) return produced
     const any = readdirSync(workDir)
-      .filter((f) => f.endsWith('.srt'))
+      .filter((f) => f.startsWith(`clip_${index}`) && f.endsWith('.srt'))
       .map((f) => join(workDir, f))
-      .find((p) => readFileSync(p, 'utf8').trim().length > 0)
-
-    if (!any) {
-      onLine('Whisper finished but produced no subtitle text (silent or unclear audio).')
-      return null
-    }
-    return any
+      .find((p) => countSrtCues(p) > 0)
+    return any || null
   } catch (err) {
-    onLine(`Subtitle generation skipped: ${(err as Error).message}`)
+    onLine(`Clip ${index} captions failed: ${(err as Error).message}`)
     return null
   }
 }
@@ -338,11 +501,12 @@ function sliceSrt(srtPath: string, startSec: number, endSec: number, outPath: st
     const ns = Math.max(0, s - startSec)
     const ne = Math.max(ns + 0.05, e - startSec)
     const text = lines.filter((l) => l !== timeLine && !/^\d+$/.test(l)).join('\n')
+    if (!text.trim()) continue
     kept.push(`${idx}\n${formatTs(ns)} --> ${formatTs(ne)}\n${text}`)
     idx++
   }
 
-  writeFileSync(outPath, kept.join('\n\n') + (kept.length ? '\n' : ''), 'utf8')
+  writeFileSync(outPath, kept.length ? kept.join('\n\n') + '\n' : '', 'utf8')
 }
 
 function parseTs(ts: string): number {
@@ -363,6 +527,44 @@ function pad(n: number): string {
   return String(n).padStart(2, '0')
 }
 
+function encodeArgs(
+  input: string,
+  output: string,
+  start: number,
+  duration: number,
+  vf: string,
+  enhance: boolean
+): string[] {
+  return [
+    '-y',
+    '-ss',
+    String(start),
+    '-t',
+    String(duration),
+    '-i',
+    input,
+    '-vf',
+    vf,
+    '-c:v',
+    'libx264',
+    '-preset',
+    enhance ? 'faster' : 'veryfast',
+    '-crf',
+    enhance ? '20' : '23',
+    '-pix_fmt',
+    'yuv420p',
+    '-threads',
+    '0',
+    '-c:a',
+    'aac',
+    '-b:a',
+    '160k',
+    '-movflags',
+    '+faststart',
+    output
+  ]
+}
+
 async function renderClip(opts: {
   input: string
   output: string
@@ -375,51 +577,85 @@ async function renderClip(opts: {
   onLine: (line: string) => void
 }): Promise<void> {
   const ffmpeg = getFfmpegPath()
-  const vf = aspectFilter(opts.aspect, opts.enhance)
-  const args = [
-    '-y',
-    '-ss',
-    String(opts.start),
-    '-t',
-    String(opts.duration),
-    '-i',
-    opts.input
-  ]
+  const baseVf = aspectFilter(opts.aspect, opts.enhance)
+  const cueCount =
+    opts.subtitlePath && existsSync(opts.subtitlePath) ? countSrtCues(opts.subtitlePath) : 0
 
-  if (opts.subtitlePath && existsSync(opts.subtitlePath)) {
-    // Use a short relative path + cwd so Windows drive letters don't break libass
-    const localSubs = join(opts.workDir, 'burn.srt')
-    writeFileSync(localSubs, readFileSync(opts.subtitlePath))
-    args.push(
-      '-vf',
-      `${vf},subtitles=burn.srt:force_style='FontName=Arial,FontSize=24,PrimaryColour=&H00FFFFFF&,OutlineColour=&H00000000&,BorderStyle=3,Outline=2,Shadow=0,MarginV=60,Alignment=2'`
+  if (!opts.subtitlePath || cueCount === 0) {
+    await runProcess(
+      ffmpeg,
+      encodeArgs(opts.input, opts.output, opts.start, opts.duration, baseVf, opts.enhance),
+      opts.onLine,
+      opts.workDir
     )
-  } else {
-    args.push('-vf', vf)
+    return
   }
 
-  // veryfast/faster keeps 20–30 min sources practical; enhance only improves CRF slightly
-  args.push(
-    '-c:v',
-    'libx264',
-    '-preset',
-    opts.enhance ? 'faster' : 'veryfast',
-    '-crf',
-    opts.enhance ? '20' : '23',
-    '-pix_fmt',
-    'yuv420p',
-    '-threads',
-    '0',
-    '-c:a',
-    'aac',
-    '-b:a',
-    '160k',
-    '-movflags',
-    '+faststart',
-    opts.output
-  )
+  // Copy into workDir so filters can use short relative names (Windows drive letters break libass)
+  const localSrt = join(opts.workDir, 'burn.srt')
+  const localAss = join(opts.workDir, 'burn.ass')
+  writeFileSync(localSrt, readFileSync(opts.subtitlePath))
+  srtToAss(localSrt, localAss, opts.aspect)
 
-  await runProcess(ffmpeg, args, opts.onLine, opts.workDir)
+  const fonts = systemFontsDir()
+  const fontsOpt = fonts ? `:fontsdir='${escapeFilterPath(fonts)}'` : ''
+  const attempts = [
+    `ass=burn.ass${fontsOpt}`,
+    `subtitles=burn.srt${fontsOpt}`,
+    `subtitles=burn.srt${fontsOpt}:force_style='FontName=Arial,FontSize=28,PrimaryColour=&H00FFFFFF&,OutlineColour=&H00000000&,BorderStyle=3,Outline=3,Shadow=0,MarginV=70,Alignment=2'`
+  ]
+
+  opts.onLine(`Burning ${cueCount} caption lines into clip…`)
+
+  let lastErr: Error | null = null
+  for (const filter of attempts) {
+    try {
+      await runProcess(
+        ffmpeg,
+        encodeArgs(
+          opts.input,
+          opts.output,
+          opts.start,
+          opts.duration,
+          `${baseVf},${filter}`,
+          opts.enhance
+        ),
+        opts.onLine,
+        opts.workDir
+      )
+      opts.onLine(`Captions burned successfully (${filter.split(':')[0]}).`)
+      return
+    } catch (err) {
+      lastErr = err as Error
+      opts.onLine(`Caption burn attempt failed (${filter.split(':')[0]}): ${lastErr.message}`)
+    }
+  }
+
+  // Last resort: export video without burn-in but keep the sidecar .srt
+  opts.onLine(
+    `Could not burn captions into pixels (${lastErr?.message || 'unknown'}). Exporting video + .srt sidecar.`
+  )
+  await runProcess(
+    ffmpeg,
+    encodeArgs(opts.input, opts.output, opts.start, opts.duration, baseVf, opts.enhance),
+    opts.onLine,
+    opts.workDir
+  )
+}
+
+function childEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env }
+  const ffmpeg = getFfmpegPath()
+  const binDir = dirname(ffmpeg)
+  if (binDir && binDir !== '.' && existsSync(binDir)) {
+    env.PATH = [binDir, env.PATH || ''].filter(Boolean).join(delimiter)
+  }
+  // Help Whisper / imageio find the same ffmpeg we ship
+  if (ffmpeg && existsSync(ffmpeg)) {
+    env.FFMPEG_BINARY = ffmpeg
+    env.IMAGEIO_FFMPEG_EXE = ffmpeg
+  }
+  return env
 }
 
 function runProcess(
@@ -429,7 +665,12 @@ function runProcess(
   cwd?: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], cwd })
+    const child = spawn(cmd, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      cwd,
+      env: childEnv(),
+      windowsHide: true
+    })
     const fail = (err: Error) => reject(err)
 
     child.stdout.on('data', (buf: Buffer) => {
@@ -548,18 +789,43 @@ export async function processClipJob(
       const outPath = join(request.outputDir!, outName)
       let clipSrt: string | undefined
 
-      if (masterSrt) {
-        clipSrt = join(workRoot, `part_${i + 1}.srt`)
-        sliceSrt(masterSrt, start, start + duration, clipSrt)
-        if (!readFileSync(clipSrt, 'utf8').trim()) {
-          clipSrt = undefined
+      if (request.burnSubtitles) {
+        if (masterSrt) {
+          clipSrt = join(workRoot, `part_${i + 1}.srt`)
+          sliceSrt(masterSrt, start, start + duration, clipSrt)
+          if (countSrtCues(clipSrt) === 0) clipSrt = undefined
+        }
+
+        // Fallback: transcribe this clip alone if master captions missing/empty
+        if (!clipSrt) {
+          report({
+            status: 'transcribing',
+            message: `No sliced captions — transcribing clip ${i + 1} directly…`,
+            percent: 35 + Math.round((i / Math.max(totalClips, 1)) * 50)
+          })
+          const direct = await transcribeClipAudio(
+            sourcePath,
+            start,
+            duration,
+            workRoot,
+            i + 1,
+            (line) =>
+              report({
+                status: 'transcribing',
+                message: line.slice(0, 140),
+                percent: 35 + Math.round((i / Math.max(totalClips, 1)) * 50)
+              })
+          )
+          if (direct) clipSrt = direct
         }
       }
 
       const basePct = 35 + Math.round((i / Math.max(totalClips, 1)) * 55)
       report({
         status: clipSrt ? 'subtitling' : 'clipping',
-        message: `Rendering clip ${i + 1} of ${totalClips}…`,
+        message: clipSrt
+          ? `Rendering clip ${i + 1}/${totalClips} with captions…`
+          : `Rendering clip ${i + 1}/${totalClips} (no captions for this part)…`,
         percent: basePct
       })
 
@@ -573,15 +839,24 @@ export async function processClipJob(
         subtitlePath: clipSrt,
         workDir: workRoot,
         onLine: (line) => {
-          if (line.includes('time=')) {
+          if (line.includes('time=') || line.toLowerCase().includes('error') || line.includes('Subtitle')) {
             report({
-              status: 'enhancing',
-              message: `Encoding clip ${i + 1}/${totalClips}: ${line.match(/time=\S+/)?.[0] || ''}`,
+              status: clipSrt ? 'subtitling' : 'enhancing',
+              message: `Encoding clip ${i + 1}/${totalClips}: ${line.slice(0, 120)}`,
               percent: Math.min(94, basePct + 5)
             })
           }
         }
       })
+
+      // Always keep a sidecar .srt next to the mp4 when captions exist
+      if (clipSrt && countSrtCues(clipSrt) > 0) {
+        try {
+          copyFileSync(clipSrt, outPath.replace(/\.mp4$/i, '.srt'))
+        } catch {
+          /* ignore sidecar copy errors */
+        }
+      }
 
       segments.push({
         index: i + 1,

@@ -28,16 +28,16 @@ Open the latest release:
 
 **[https://github.com/Shaheer30/clipster/releases/latest](https://github.com/Shaheer30/clipster/releases/latest)**
 
-Or the current production build (**v1.1.0**):
+Or the current production build (**v1.1.1**):
 
-**[https://github.com/Shaheer30/clipster/releases/tag/v1.1.0](https://github.com/Shaheer30/clipster/releases/tag/v1.1.0)**
+**[https://github.com/Shaheer30/clipster/releases/tag/v1.1.1](https://github.com/Shaheer30/clipster/releases/tag/v1.1.1)**
 
 | Your computer | Download this file |
 |---|---|
-| **Windows** | `Clipster-Setup-1.1.0.exe` |
-| **macOS** | `Clipster-1.1.0-mac.dmg` |
-| **Linux (any)** | `Clipster-1.1.0-x86_64.AppImage` |
-| **Ubuntu / Debian** | `Clipster-1.1.0-amd64.deb` |
+| **Windows** | `Clipster-Setup-1.1.1.exe` |
+| **macOS** | `Clipster-1.1.1-mac.dmg` |
+| **Linux (any)** | `Clipster-1.1.1-x86_64.AppImage` |
+| **Ubuntu / Debian** | `Clipster-1.1.1-amd64.deb` |
 
 ---
 
@@ -45,7 +45,7 @@ Or the current production build (**v1.1.0**):
 
 ### Windows
 
-1. Download `Clipster-Setup-1.1.0.exe`.
+1. Download `Clipster-Setup-1.1.1.exe`.
 2. Double-click the file.
 3. If Windows SmartScreen appears, choose **More info** → **Run anyway** (common for new apps).
 4. Follow the installer:
@@ -64,7 +64,7 @@ Or the current production build (**v1.1.0**):
 
 ### macOS
 
-1. Download `Clipster-1.1.0-mac.dmg`.
+1. Download `Clipster-1.1.1-mac.dmg`.
 2. Open the DMG and drag **Clipster** into **Applications**.
 3. First launch: right-click Clipster → **Open** (macOS may block unsigned apps once).
 4. Confirm the tool badges in the app header.
@@ -74,14 +74,14 @@ Or the current production build (**v1.1.0**):
 **AppImage**
 
 ```bash
-chmod +x Clipster-1.1.0-x86_64.AppImage
-./Clipster-1.1.0-x86_64.AppImage
+chmod +x Clipster-1.1.1-x86_64.AppImage
+./Clipster-1.1.1-x86_64.AppImage
 ```
 
 **Debian / Ubuntu (.deb)**
 
 ```bash
-sudo dpkg -i Clipster-1.1.0-amd64.deb
+sudo dpkg -i Clipster-1.1.1-amd64.deb
 # if dependencies are missing:
 sudo apt-get install -f
 ```
@@ -305,7 +305,7 @@ Prefer **9:16** exports for those platforms.
 
 For a reliable “ready to post” workflow:
 
-1. Use **v1.1.0+** installer from GitHub Releases.  
+1. Use **v1.1.1+** installer from GitHub Releases.  
 2. Confirm **FFmpeg ready** + **yt-dlp ready**.  
 3. Install Whisper if you need captions → **Whisper ready**.  
 4. Use a clear source video (decent audio if you want subtitles).  
@@ -334,9 +334,9 @@ For a reliable “ready to post” workflow:
 
 ### `ffmpeg.exe ENOENT` / spawn error on Windows
 
-You are on an old build. Install **v1.1.0 or newer**:
+You are on an old build. Install **v1.1.1 or newer**:
 
-[Clipster-Setup-1.1.0.exe](https://github.com/Shaheer30/clipster/releases/download/v1.1.0/Clipster-Setup-1.1.0.exe)
+[Clipster-Setup-1.1.1.exe](https://github.com/Shaheer30/clipster/releases/download/v1.1.1/Clipster-Setup-1.1.1.exe)
 
 Uninstall the previous Clipster first, then install again.
 
@@ -361,10 +361,10 @@ Choose a shorter clip length (1 or 2 minutes), or use a longer source video.
 
 ### Export is very slow
 
-That is normal for very long sources with many clips, but **v1.1.0+** is much faster.
+That is normal for very long sources with many clips, but **v1.1.1+** is much faster.
 
 Tips:
-- Use **v1.1.0 or newer**
+- Use **v1.1.1 or newer**
 - Turn **Auto subtitles** OFF if you do not need captions (Whisper is the slowest step)
 - Prefer **2 or 3 minute** clips (fewer files to encode) for a first pass
 - Keep **Enhanced quality** ON — it no longer uses the ultra-slow encoder preset
@@ -375,12 +375,14 @@ A 20–30 minute video should usually finish in minutes on a modern PC, not an h
 
 1. Confirm the header shows **Whisper ready**
 2. Keep **Auto subtitles** ON
-3. Use **Clipster 1.1.0+** (fixes Windows caption burn-in + auto language detection)
+3. Use **Clipster 1.1.1+** (ASS burn-in + Windows font path + per-clip Whisper fallback)
 4. Make sure the video has clear speech (not music-only)
 5. Watch the log for:
-   - `Whisper not installed`
+   - `Captions generated: N lines`
+   - `Burning N caption lines into clip…`
+   - `Captions burned successfully`
    - `No captions were produced`
-   - `Captions ready — encoding clips…`
+6. Even if burn-in fails, Clipster writes a matching `.srt` next to each `.mp4` when captions exist
 
 ### App won’t open on macOS
 

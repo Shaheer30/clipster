@@ -45,6 +45,12 @@ function refreshPath(): void {
     extras.push(join(homedir(), '.local', 'bin'), '/usr/local/bin')
   }
 
+  // Prefer Clipster's bundled ffmpeg so Whisper / yt-dlp can find it
+  const resourceBin = process.resourcesPath
+    ? join(process.resourcesPath, 'bin')
+    : join(process.cwd(), 'resources', 'bin')
+  if (existsSync(resourceBin)) extras.unshift(resourceBin)
+
   process.env.PATH = [...extras, process.env.PATH || ''].filter(Boolean).join(delimiter)
 }
 

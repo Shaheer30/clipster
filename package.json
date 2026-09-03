@@ -1,6 +1,6 @@
 {
   "name": "clipster",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Dark-luxury desktop app for clipping videos into ready-to-post Shorts, TikTok, and Reels",
   "main": "./out/main/index.js",
   "author": {
